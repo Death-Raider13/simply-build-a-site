@@ -1,14 +1,15 @@
 export interface Notification {
   id: string
-  type: "ORDER" | "INVENTORY" | "MESSAGE" | "SYSTEM" | "PAYMENT" | "SHIPPING"
+  type: "order" | "inventory" | "message" | "system" | "payment" | "shipping"
   title: string
   message: string
-  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  priority: "low" | "medium" | "high" | "urgent"
   userId: string
   userType: "CUSTOMER" | "VENDOR" | "ADMIN"
   read: boolean
   actionUrl?: string
   actionLabel?: string
+  actionText?: string
   metadata?: Record<string, any>
   createdAt: Date
   readAt?: Date
@@ -106,63 +107,68 @@ export class NotificationSystem {
     // Sample notifications
     const sampleNotifications: Omit<Notification, "id" | "createdAt">[] = [
       {
-        type: "ORDER",
+        type: "order",
         title: "Order Confirmed",
         message: "Your order #ORD-001 has been confirmed and is being processed.",
-        priority: "MEDIUM",
+        priority: "medium",
         userId: "user-001",
         userType: "CUSTOMER",
         read: false,
         actionUrl: "/orders/ORD-001",
         actionLabel: "View Order",
+        actionText: "View Order",
         metadata: { orderId: "ORD-001", amount: 15500 },
       },
       {
-        type: "INVENTORY",
+        type: "inventory",
         title: "Low Stock Alert",
         message: "Nigerian Chin Chin Pack is running low (5 units remaining).",
-        priority: "HIGH",
+        priority: "high",
         userId: "vendor-002",
         userType: "VENDOR",
         read: false,
         actionUrl: "/vendor/inventory",
         actionLabel: "Manage Inventory",
+        actionText: "Manage Inventory",
         metadata: { productId: "prod-002", currentStock: 5 },
       },
       {
-        type: "SHIPPING",
+        type: "shipping",
         title: "Package Shipped",
         message: "Your order has been shipped and is on its way to you.",
-        priority: "MEDIUM",
+        priority: "medium",
         userId: "user-001",
         userType: "CUSTOMER",
         read: true,
         actionUrl: "/orders/track/TRK-001",
         actionLabel: "Track Package",
+        actionText: "Track Package",
         metadata: { trackingNumber: "TRK-001" },
       },
       {
-        type: "PAYMENT",
+        type: "payment",
         title: "Payment Received",
         message: "Payment of ₦8,500 has been received for order #ORD-002.",
-        priority: "MEDIUM",
+        priority: "medium",
         userId: "vendor-001",
         userType: "VENDOR",
         read: false,
         actionUrl: "/vendor/orders/ORD-002",
         actionLabel: "View Order",
+        actionText: "View Order",
         metadata: { orderId: "ORD-002", amount: 8500 },
       },
       {
-        type: "SYSTEM",
+        type: "system",
         title: "Welcome to KNITTED_GOURMET",
         message: "Welcome to Nigeria's premier marketplace for authentic Nigerian products!",
-        priority: "LOW",
+        priority: "low",
         userId: "user-001",
         userType: "CUSTOMER",
         read: false,
         actionUrl: "/explore",
         actionLabel: "Start Shopping",
+        actionText: "Start Shopping",
       },
     ]
 
@@ -272,15 +278,15 @@ export class NotificationSystem {
 
   private isNotificationTypeEnabled(type: Notification["type"], preferences: NotificationPreferences): boolean {
     switch (type) {
-      case "ORDER":
-      case "PAYMENT":
-      case "SHIPPING":
+      case "order":
+      case "payment":
+      case "shipping":
         return preferences.orderUpdates
-      case "INVENTORY":
+      case "inventory":
         return preferences.inventoryAlerts
-      case "SYSTEM":
+      case "system":
         return preferences.systemMessages
-      case "MESSAGE":
+      case "message":
         return true // Messages are always enabled
       default:
         return true
@@ -509,28 +515,29 @@ export class NotificationSystem {
     }
 
     await this.sendNotification({
-      type: "ORDER",
+      type: "order",
       title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
       message: statusMessages[status as keyof typeof statusMessages] || `Order status updated to ${status}.`,
-      priority: status === "cancelled" ? "HIGH" : "MEDIUM",
+      priority: status === "cancelled" ? "high" : "medium",
       userId,
       userType,
       actionUrl: userType === "CUSTOMER" ? `/orders/${orderId}` : `/vendor/orders/${orderId}`,
       actionLabel: "View Order",
+      actionText: "View Order",
       metadata: { orderId, status, amount },
     })
   }
 
   // Send inventory alert
   async sendInventoryAlert(vendorId: string, productName: string, currentStock: number, reorderPoint: number) {
-    const priority = currentStock === 0 ? "URGENT" : currentStock <= reorderPoint * 0.5 ? "HIGH" : "MEDIUM"
+    const priority = currentStock === 0 ? "urgent" : currentStock <= reorderPoint * 0.5 ? "high" : "medium"
     const message =
       currentStock === 0
         ? `${productName} is out of stock.`
         : `${productName} is running low (${currentStock} units remaining).`
 
     await this.sendNotification({
-      type: "INVENTORY",
+      type: "inventory",
       title: currentStock === 0 ? "Out of Stock Alert" : "Low Stock Alert",
       message,
       priority,
@@ -538,6 +545,7 @@ export class NotificationSystem {
       userType: "VENDOR",
       actionUrl: "/vendor/inventory",
       actionLabel: "Manage Inventory",
+      actionText: "Manage Inventory",
       metadata: { productName, currentStock, reorderPoint },
     })
   }
@@ -563,18 +571,20 @@ export class NotificationSystem {
     }
 
     await this.sendNotification({
-      type: "PAYMENT",
+      type: "payment",
       title: titles[type],
       message: messages[type],
-      priority: "MEDIUM",
+      priority: "medium",
       userId,
       userType,
       actionUrl: userType === "CUSTOMER" ? `/orders/${orderId}` : `/vendor/orders/${orderId}`,
       actionLabel: "View Order",
+      actionText: "View Order",
       metadata: { orderId, amount, type },
     })
   }
 }
 
-// Export singleton instance
+// Export singleton instance with correct name
 export const notificationSystem = NotificationSystem.getInstance()
+export const notificationManager = notificationSystem

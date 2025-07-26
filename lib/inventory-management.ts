@@ -12,6 +12,7 @@ export interface InventoryItem {
   availableStock: number
   reorderPoint: number
   reorderQuantity: number
+  minStockLevel: number
   unitCost: number
   unitPrice: number
   lastUpdated: Date
@@ -19,6 +20,7 @@ export interface InventoryItem {
   supplier?: string
   expiryDate?: Date
   batchNumber?: string
+  status: "active" | "inactive" | "discontinued"
 }
 
 export interface StockMovement {
@@ -39,8 +41,10 @@ export interface StockMovement {
 export interface LowStockAlert {
   id: string
   inventoryItemId: string
+  productId: string
   productName: string
   currentStock: number
+  minStockLevel: number
   reorderPoint: number
   severity: "LOW" | "CRITICAL" | "OUT_OF_STOCK"
   vendorId: string
@@ -90,6 +94,12 @@ export class InventoryManager {
     this.initializeSampleData()
   }
 
+  // Initialize method for external calls
+  initialize() {
+    // Already initialized in constructor, but keeping for compatibility
+    return true
+  }
+
   private initializeSampleData() {
     const sampleItems: InventoryItem[] = [
       {
@@ -105,10 +115,12 @@ export class InventoryManager {
         availableStock: 12,
         reorderPoint: 10,
         reorderQuantity: 25,
+        minStockLevel: 8,
         unitCost: 5000,
         unitPrice: 8500,
         lastUpdated: new Date(),
         location: "Warehouse A-1",
+        status: "active",
       },
       {
         id: "inv-002",
@@ -123,11 +135,13 @@ export class InventoryManager {
         availableStock: 3,
         reorderPoint: 20,
         reorderQuantity: 50,
+        minStockLevel: 15,
         unitCost: 1500,
         unitPrice: 2500,
         lastUpdated: new Date(),
         location: "Warehouse B-2",
         expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        status: "active",
       },
       {
         id: "inv-003",
@@ -142,10 +156,12 @@ export class InventoryManager {
         availableStock: 0,
         reorderPoint: 15,
         reorderQuantity: 30,
+        minStockLevel: 10,
         unitCost: 2000,
         unitPrice: 3200,
         lastUpdated: new Date(),
         location: "Warehouse C-1",
+        status: "active",
       },
       {
         id: "inv-004",
@@ -160,10 +176,12 @@ export class InventoryManager {
         availableStock: 7,
         reorderPoint: 12,
         reorderQuantity: 20,
+        minStockLevel: 10,
         unitCost: 3500,
         unitPrice: 6000,
         lastUpdated: new Date(),
         location: "Warehouse A-2",
+        status: "active",
       },
     ]
 
@@ -175,14 +193,24 @@ export class InventoryManager {
     this.checkLowStock()
   }
 
-  // Get all inventory items
-  getAllItems(): InventoryItem[] {
+  // Get all inventory items - renamed from getAllItems for compatibility
+  getAllInventoryItems(): InventoryItem[] {
     return Array.from(this.inventory.values())
   }
 
-  // Get inventory by vendor
-  getItemsByVendor(vendorId: string): InventoryItem[] {
+  // Alias for backward compatibility
+  getAllItems(): InventoryItem[] {
+    return this.getAllInventoryItems()
+  }
+
+  // Get inventory by vendor - renamed for compatibility
+  getInventoryByVendor(vendorId: string): InventoryItem[] {
     return Array.from(this.inventory.values()).filter((item) => item.vendorId === vendorId)
+  }
+
+  // Alias for backward compatibility
+  getItemsByVendor(vendorId: string): InventoryItem[] {
+    return this.getInventoryByVendor(vendorId)
   }
 
   // Get single inventory item
@@ -190,14 +218,14 @@ export class InventoryManager {
     return this.inventory.get(inventoryId)
   }
 
-  // Update stock levels
+  // Update stock levels - fixed signature
   updateStock(
     inventoryId: string,
     quantity: number,
     type: StockMovement["type"],
     reason: string,
     userId: string,
-    userName: string,
+    userName?: string,
     reference?: string,
   ): boolean {
     const item = this.inventory.get(inventoryId)
@@ -242,7 +270,7 @@ export class InventoryManager {
       reason,
       reference,
       userId,
-      userName,
+      userName: userName || "System",
       timestamp: new Date(),
     }
 
@@ -309,8 +337,10 @@ export class InventoryManager {
         const alert: LowStockAlert = {
           id: `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           inventoryItemId: item.id,
+          productId: item.productId,
           productName: item.productName,
           currentStock: item.currentStock,
+          minStockLevel: item.minStockLevel,
           reorderPoint: item.reorderPoint,
           severity,
           vendorId: item.vendorId,
@@ -361,6 +391,11 @@ export class InventoryManager {
     alert.acknowledgedAt = new Date()
 
     return true
+  }
+
+  // Get inventory statistics - added method
+  getInventoryStats(vendorId?: string): InventoryStats {
+    return this.getStats(vendorId)
   }
 
   // Get inventory statistics
@@ -452,9 +487,16 @@ export class InventoryManager {
     return { success, failed }
   }
 
-  // Subscribe to low stock alerts
-  subscribeToAlerts(callback: (alert: LowStockAlert) => void) {
+  // Subscribe to low stock alerts - renamed for compatibility
+  onLowStockAlert(callback: (alert: LowStockAlert) => void) {
     this.subscribers.push(callback)
+    // Return unsubscribe function
+    return () => {
+      const index = this.subscribers.indexOf(callback)
+      if (index > -1) {
+        this.subscribers.splice(index, 1)
+      }
+    }
   }
 
   // Unsubscribe from alerts

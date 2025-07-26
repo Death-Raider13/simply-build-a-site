@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -32,17 +33,16 @@ export function InventoryDashboard({ vendorId }: InventoryDashboardProps) {
     loadInventoryData()
 
     // Subscribe to low stock alerts
-    const unsubscribe = inventoryManager.onLowStockAlert((alert) => {
+    const unsubscribe = inventoryManager.onLowStockAlert((alert: LowStockAlert) => {
       if (!vendorId || alert.vendorId === vendorId) {
         setLowStockAlerts((prev) => [alert, ...prev])
 
         // Create notification
-        notificationManager.createInventoryNotification(
+        notificationManager.sendInventoryAlert(
           alert.vendorId,
-          alert.productId,
           alert.productName,
           alert.currentStock,
-          alert.minStockLevel,
+          alert.reorderPoint,
         )
       }
     })
@@ -67,9 +67,10 @@ export function InventoryDashboard({ vendorId }: InventoryDashboardProps) {
     const success = inventoryManager.updateStock(
       productId,
       newStock,
-      "adjustment",
+      "ADJUSTMENT",
       "Manual stock adjustment",
       vendorId || "admin",
+      "Manual Update"
     )
 
     if (success) {
@@ -178,8 +179,8 @@ export function InventoryDashboard({ vendorId }: InventoryDashboardProps) {
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge variant={alert.severity === "critical" ? "destructive" : "secondary"}>
-                      {alert.severity}
+                    <Badge variant={alert.severity === "CRITICAL" ? "destructive" : "secondary"}>
+                      {alert.severity.toLowerCase()}
                     </Badge>
                     <Button size="sm" variant="outline" onClick={() => handleAcknowledgeAlert(alert.id)}>
                       Acknowledge

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -27,7 +28,7 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
     }
 
     // Subscribe to real-time notifications
-    const unsubscribe = notificationManager.subscribe(userId, (notification) => {
+    const unsubscribe = notificationManager.subscribe(userId, (notification: Notification) => {
       setNotifications((prev) => [notification, ...prev])
       setUnreadCount((prev) => prev + 1)
     })
@@ -36,16 +37,13 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
   }, [userId, isOpen])
 
   const loadNotifications = () => {
-    notificationManager.initialize()
-    const allNotifications = notificationManager.getNotifications(userId)
-    const unread = notificationManager.getUnreadCount(userId)
-
-    setNotifications(allNotifications)
-    setUnreadCount(unread)
+    const result = notificationManager.getNotifications(userId)
+    setNotifications(result.notifications)
+    setUnreadCount(result.unread)
   }
 
   const handleMarkAsRead = (notificationId: string) => {
-    notificationManager.markAsRead(userId, notificationId)
+    notificationManager.markAsRead(notificationId)
     setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)))
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
@@ -57,7 +55,7 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
   }
 
   const handleDeleteNotification = (notificationId: string) => {
-    notificationManager.deleteNotification(userId, notificationId)
+    notificationManager.deleteNotification(notificationId)
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
 
     const notification = notifications.find((n) => n.id === notificationId)
@@ -208,7 +206,7 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
                                       window.location.href = notification.actionUrl!
                                     }}
                                   >
-                                    {notification.actionText || "View"}
+                                    {notification.actionText || notification.actionLabel || "View"}
                                   </Button>
                                 )}
                               </div>
