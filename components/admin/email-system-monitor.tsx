@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -6,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Loader2, RefreshCw, Mail, CheckCircle, XCircle } from "lucide-react"
-import { getEmailLogsAction, testEmailConfigurationAction, sendTestEmailAction } from "@/actions/email" // Import server actions
+import { getEmailLogsAction, testEmailConfigurationAction, sendTestEmailAction } from "@/actions/email"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -41,8 +42,13 @@ export function EmailSystemMonitor() {
   const fetchEmailLogs = async () => {
     setLoadingLogs(true)
     try {
-      const result = await getEmailLogsAction() // Call server action
-      setEmailLogs(result.recentLogs)
+      const result = await getEmailLogsAction()
+      // Ensure proper typing for email logs
+      const typedLogs: EmailLog[] = result.recentLogs.map((log: any) => ({
+        ...log,
+        status: log.status === "sent" ? "sent" as const : "failed" as const
+      }))
+      setEmailLogs(typedLogs)
       toast({
         title: "Email Logs Refreshed",
         description: "Latest email delivery logs fetched.",
@@ -64,7 +70,7 @@ export function EmailSystemMonitor() {
     setTestResults([])
     setOverallTestStatus("Testing...")
     try {
-      const result = await testEmailConfigurationAction() // Call server action
+      const result = await testEmailConfigurationAction()
       setTestResults(result.providers)
       setOverallTestStatus(result.overallStatus)
       toast({
@@ -103,7 +109,7 @@ export function EmailSystemMonitor() {
       if (result.success) {
         toast({
           title: "Test Email Sent!",
-          description: `Test email sent successfully via ${result.provider}. Check your inbox!`,
+          description: `Test email sent successfully${result.provider ? ` via ${result.provider}` : ""}. Check your inbox!`,
         })
       } else {
         toast({
