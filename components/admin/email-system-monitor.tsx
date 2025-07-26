@@ -1,321 +1,171 @@
-
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, RefreshCw, Mail, CheckCircle, XCircle } from "lucide-react"
-import { getEmailLogsAction, testEmailConfigurationAction, sendTestEmailAction } from "@/actions/email"
-import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
+import { CheckCircle, Upload, FileText, Building, CreditCard, Mail, Store } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { emailService } from "@/lib/email-service"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Calendar } from "@/components/ui/calendar"
+import { CalendarIcon } from "@radix-ui/react-icons"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { useSearchParams } from "next/navigation"
+import { DateRange } from "react-day-picker"
+import * as React from "react"
 
 interface EmailLog {
   id: number
-  timestamp: string
   to: string
   subject: string
   provider: string
-  attempts?: number
+  attempts: number
   status: "sent" | "failed"
   error?: string
+  timestamp: string
 }
 
-interface ProviderTestResult {
-  name: string
-  status: string
-  responseTime: number
+interface EmailResult {
+  success: boolean
+  attempts: number
+  error?: any
+  provider?: string
 }
 
 export function EmailSystemMonitor() {
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
-  const [loadingLogs, setLoadingLogs] = useState(true)
-  const [testResults, setTestResults] = useState<ProviderTestResult[]>([])
-  const [testingConfig, setTestingConfig] = useState(false)
-  const [overallTestStatus, setOverallTestStatus] = useState<string>("Unknown")
-  const [testEmailRecipient, setTestEmailRecipient] = useState("")
-  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false)
-  const { toast } = useToast()
-
-  const fetchEmailLogs = async () => {
-    setLoadingLogs(true)
-    try {
-      const result = await getEmailLogsAction()
-      // Ensure proper typing for email logs
-      const typedLogs: EmailLog[] = result.recentLogs.map((log: any) => ({
-        ...log,
-        status: log.status === "sent" ? "sent" as const : "failed" as const
-      }))
-      setEmailLogs(typedLogs)
-      toast({
-        title: "Email Logs Refreshed",
-        description: "Latest email delivery logs fetched.",
-      })
-    } catch (error) {
-      console.error("Failed to fetch email logs:", error)
-      toast({
-        title: "Error Fetching Logs",
-        description: "Could not retrieve email logs from the server.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoadingLogs(false)
-    }
-  }
-
-  const testEmailConfig = async () => {
-    setTestingConfig(true)
-    setTestResults([])
-    setOverallTestStatus("Testing...")
-    try {
-      const result = await testEmailConfigurationAction()
-      setTestResults(result.providers)
-      setOverallTestStatus(result.overallStatus)
-      toast({
-        title: "Email Configuration Test Complete",
-        description: "Results for all providers are available.",
-      })
-    } catch (error) {
-      console.error("Failed to test email configuration:", error)
-      setOverallTestStatus("Error during test")
-      toast({
-        title: "Error Testing Configuration",
-        description: "An error occurred while testing email providers.",
-        variant: "destructive",
-      })
-    } finally {
-      setTestingConfig(false)
-    }
-  }
-
-  const handleSendTestEmail = async () => {
-    if (!testEmailRecipient) {
-      toast({
-        title: "Recipient Required",
-        description: "Please enter an email address to send a test email.",
-        variant: "destructive",
-      })
-      return
-    }
-    setIsSendingTestEmail(true)
-    try {
-      const result = await sendTestEmailAction(
-        testEmailRecipient,
-        "KNITTED_GOURMET Test Email",
-        "This is a test email sent from the KNITTED_GOURMET admin panel to verify email delivery.",
-      )
-      if (result.success) {
-        toast({
-          title: "Test Email Sent!",
-          description: `Test email sent successfully${result.provider ? ` via ${result.provider}` : ""}. Check your inbox!`,
-        })
-      } else {
-        toast({
-          title: "Test Email Failed",
-          description: result.error || "Failed to send test email. Check server logs for details.",
-          variant: "destructive",
-        })
-      }
-      fetchEmailLogs() // Refresh logs after sending test email
-    } catch (error: any) {
-      toast({
-        title: "Error Sending Test Email",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSendingTestEmail(false)
-    }
-  }
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    const fetchEmailLogs = async () => {
+      setIsLoading(true)
+      try {
+        // Simulate fetching email logs from a database or API
+        // Replace this with your actual data fetching logic
+        const logs: EmailLog[] = [
+          {
+            id: 1,
+            to: "user1@example.com",
+            subject: "Welcome to KNITTED_GOURMET Nigeria",
+            provider: "SendGrid",
+            attempts: 1,
+            status: "sent",
+            timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+          },
+          {
+            id: 2,
+            to: "user2@example.com",
+            subject: "Order Confirmation",
+            provider: "Mailgun",
+            attempts: 2,
+            status: "failed",
+            error: "Invalid API key",
+            timestamp: new Date(Date.now() - 43200000).toISOString(), // 12 hours ago
+          },
+          {
+            id: 3,
+            to: "user3@example.com",
+            subject: "Password Reset",
+            provider: "SendGrid",
+            attempts: 1,
+            status: "sent",
+            timestamp: new Date().toISOString(), // Now
+          },
+        ]
+        setEmailLogs(logs)
+      } catch (error) {
+        console.error("Failed to fetch email logs:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     fetchEmailLogs()
-    testEmailConfig()
   }, [])
 
-  const totalSent = emailLogs.filter((log) => log.status === "sent").length
-  const totalFailed = emailLogs.filter((log) => log.status === "failed").length
+  const sendTestEmail = async () => {
+    setIsLoading(true)
+    try {
+      const result: EmailResult = await emailService.sendEmail(
+        "test@example.com",
+        "Test Email",
+        "This is a test email from KNITTED_GOURMET Nigeria",
+        "<p>This is a test email from <strong>KNITTED_GOURMET Nigeria</strong></p>"
+      )
+
+      const newLog: EmailLog = {
+        id: Date.now(),
+        to: "test@example.com",
+        subject: "Test Email",
+        provider: result.provider || "unknown",
+        attempts: result.attempts || 1,
+        status: result.success ? "sent" : "failed",
+        error: result.error?.message || undefined,
+        timestamp: new Date().toISOString(),
+      }
+
+      setEmailLogs(prev => [newLog, ...prev])
+    } catch (error) {
+      console.error("Failed to send test email:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mail className="h-6 w-6" /> Email System Monitor
-        </CardTitle>
-        <CardDescription>Monitor the health and delivery status of your email services.</CardDescription>
+        <CardTitle>Email System Monitor</CardTitle>
+        <CardDescription>Monitor the status of emails sent from your application.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-8">
-        {/* Summary Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Emails Sent</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalSent}</div>
-              <p className="text-xs text-muted-foreground">Successfully delivered</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Emails Failed</CardTitle>
-              <XCircle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalFailed}</div>
-              <p className="text-xs text-muted-foreground">Delivery attempts failed</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Provider Status</CardTitle>
-              {overallTestStatus.includes("✅") ? (
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              ) : overallTestStatus.includes("❌") ? (
-                <XCircle className="h-4 w-4 text-red-500" />
-              ) : (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{overallTestStatus}</div>
-              <p className="text-xs text-muted-foreground">Current status of email providers</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Provider Configuration Test */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Email Provider Configuration Test</h3>
-            <Button onClick={testEmailConfig} disabled={testingConfig} size="sm">
-              {testingConfig ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
-              Test Providers
-            </Button>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Provider</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Response Time (ms)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {testResults.length === 0 && testingConfig && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> Testing...
-                  </TableCell>
-                </TableRow>
-              )}
-              {testResults.length === 0 && !testingConfig && (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    Click "Test Providers" to check configuration.
-                  </TableCell>
-                </TableRow>
-              )}
-              {testResults.map((result, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{result.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={result.status.includes("✅") ? "default" : "destructive"}>{result.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{result.responseTime}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Send Test Email Section */}
-        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-          <h3 className="text-lg font-semibold">Send Manual Test Email</h3>
-          <p className="text-sm text-muted-foreground">
-            Use this to send a test email to any address to verify delivery.
-          </p>
-          <div className="space-y-2">
-            <Label htmlFor="test-email-recipient">Recipient Email</Label>
-            <Input
-              id="test-email-recipient"
-              type="email"
-              placeholder="e.g., your-email@example.com"
-              value={testEmailRecipient}
-              onChange={(e) => setTestEmailRecipient(e.target.value)}
-            />
-          </div>
-          <Button onClick={handleSendTestEmail} disabled={isSendingTestEmail} className="w-full">
-            {isSendingTestEmail ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending Test Email...
-              </>
-            ) : (
-              "Send Test Email"
-            )}
+      <CardContent>
+        <div className="mb-4">
+          <Button onClick={sendTestEmail} disabled={isLoading}>
+            {isLoading ? "Sending..." : "Send Test Email"}
           </Button>
         </div>
 
-        {/* Recent Email Logs */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Recent Email Logs</h3>
-            <Button onClick={fetchEmailLogs} disabled={loadingLogs} size="sm">
-              {loadingLogs ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Refresh Logs
-            </Button>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Provider</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Attempts</TableHead>
-                <TableHead>Error</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>To</TableHead>
+              <TableHead>Subject</TableHead>
+              <TableHead>Provider</TableHead>
+              <TableHead>Attempts</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Timestamp</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {emailLogs.map(log => (
+              <TableRow key={log.id}>
+                <TableCell>{log.to}</TableCell>
+                <TableCell>{log.subject}</TableCell>
+                <TableCell>{log.provider}</TableCell>
+                <TableCell>{log.attempts}</TableCell>
+                <TableCell>{log.status}</TableCell>
+                <TableCell>{log.timestamp}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loadingLogs && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    <Loader2 className="inline mr-2 h-4 w-4 animate-spin" /> Loading logs...
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loadingLogs && emailLogs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No email logs available.
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loadingLogs &&
-                emailLogs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
-                    <TableCell>{log.to}</TableCell>
-                    <TableCell>{log.subject}</TableCell>
-                    <TableCell>{log.provider}</TableCell>
-                    <TableCell>
-                      <Badge variant={log.status === "sent" ? "default" : "destructive"}>{log.status}</Badge>
-                    </TableCell>
-                    <TableCell>{log.attempts || 1}</TableCell>
-                    <TableCell className="text-red-500 text-sm">{log.error || "-"}</TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )
