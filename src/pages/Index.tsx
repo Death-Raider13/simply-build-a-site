@@ -1,10 +1,10 @@
 
-import { Header } from "../../components/layout/header"
-import { Footer } from "../../components/layout/footer"
-import { HeroSection } from "../../components/home/hero-section"
-import { CategoryGrid } from "../../components/home/category-grid"
-import { FeaturedProducts } from "../../components/home/featured-products"
-import { VendorSpotlight } from "../../components/home/vendor-spotlight"
+import { Header } from "../components/layout/header"
+import { Footer } from "../components/layout/footer"
+import { HeroSection } from "../components/home/hero-section"
+import { CategoryGrid } from "../components/home/category-grid"
+import { FeaturedProducts } from "../components/home/featured-products"
+import { VendorSpotlight } from "../components/home/vendor-spotlight"
 
 const Index = () => {
   return (
