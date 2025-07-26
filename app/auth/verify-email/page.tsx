@@ -47,9 +47,9 @@ const mockUsers = [
 export default function VerifyEmailPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const emailFromQuery = searchParams.get("email") || ""
-  const codeFromQuery = searchParams.get("code") || ""
-  const emailFailedFromQuery = searchParams.get("email_failed") === "true"
+  const emailFromQuery = searchParams?.get("email") || ""
+  const codeFromQuery = searchParams?.get("code") || ""
+  const emailFailedFromQuery = searchParams?.get("email_failed") === "true"
 
   const [verificationCode, setVerificationCode] = useState("")
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error" | "resending">("idle")

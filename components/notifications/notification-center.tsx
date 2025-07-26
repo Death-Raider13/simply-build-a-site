@@ -66,13 +66,13 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
 
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case "order":
+      case "ORDER":
         return <ShoppingCart className="h-4 w-4" />
-      case "message":
+      case "MESSAGE":
         return <MessageCircle className="h-4 w-4" />
-      case "inventory":
+      case "INVENTORY":
         return <Package className="h-4 w-4" />
-      case "system":
+      case "SYSTEM":
         return <AlertTriangle className="h-4 w-4" />
       default:
         return <Bell className="h-4 w-4" />
@@ -81,13 +81,13 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
 
   const getPriorityColor = (priority: Notification["priority"]) => {
     switch (priority) {
-      case "urgent":
+      case "URGENT":
         return "text-red-600 bg-red-50 border-red-200"
-      case "high":
+      case "HIGH":
         return "text-orange-600 bg-orange-50 border-orange-200"
-      case "medium":
+      case "MEDIUM":
         return "text-blue-600 bg-blue-50 border-blue-200"
-      case "low":
+      case "LOW":
         return "text-gray-600 bg-gray-50 border-gray-200"
       default:
         return "text-gray-600 bg-gray-50 border-gray-200"
@@ -97,7 +97,7 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
   const filteredNotifications = notifications.filter((notification) => {
     if (activeTab === "all") return true
     if (activeTab === "unread") return !notification.read
-    return notification.type === activeTab
+    return notification.type === activeTab.toUpperCase()
   })
 
   if (!isOpen) return null
@@ -206,7 +206,7 @@ export function NotificationCenter({ userId, isOpen, onClose }: NotificationCent
                                       window.location.href = notification.actionUrl!
                                     }}
                                   >
-                                    {notification.actionText || notification.actionLabel || "View"}
+                                    {notification.actionLabel || "View"}
                                   </Button>
                                 )}
                               </div>

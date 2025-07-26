@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
+import { useEffect, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle, Package, Truck, Mail, Phone, MapPin, Calendar, Clock } from "lucide-react"
 import Link from "next/link"
+import { getSearchParam } from "@/lib/search-params-utils"
 
 interface OrderData {
   orderNumber: string
@@ -38,9 +40,10 @@ interface OrderData {
   status: string
 }
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams()
-  const orderNumber = searchParams.get("order")
+  const orderId = getSearchParam(searchParams, "order") || "N/A"
+  const orderNumber = getSearchParam(searchParams, "order")
   const [orderData, setOrderData] = useState<OrderData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -329,5 +332,13 @@ export default function CheckoutSuccessPage() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckoutSuccessContent />
+    </Suspense>
   )
 }

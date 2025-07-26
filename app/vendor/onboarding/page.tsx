@@ -56,8 +56,8 @@ export default function VendorOnboardingPage() {
     // Store setup
     storeName: "",
     storeDescription: "",
-    categories: [],
-    shippingMethods: [],
+    categories: [] as string[],
+    shippingMethods: [] as string[],
     returnPolicy: "",
 
     // Agreements
@@ -70,7 +70,7 @@ export default function VendorOnboardingPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const step = searchParams.get("step")
+    const step = searchParams?.get("step")
     if (step) {
       const stepIndex = ONBOARDING_STEPS.findIndex((s) => s.id === step)
       if (stepIndex !== -1) {
