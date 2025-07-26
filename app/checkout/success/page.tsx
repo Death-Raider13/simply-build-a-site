@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { CheckCircle, Package, Truck, Mail, Phone, MapPin, Calendar, Clock } from "lucide-react"
 import Link from "next/link"
+import { getSearchParam } from "@/lib/search-params-utils"
 
 interface OrderData {
   orderNumber: string
@@ -41,8 +42,8 @@ interface OrderData {
 
 function CheckoutSuccessContent() {
   const searchParams = useSearchParams()
-  const orderId = searchParams?.get("order") || "N/A"
-  const orderNumber = searchParams.get("order")
+  const orderId = getSearchParam(searchParams, "order") || "N/A"
+  const orderNumber = getSearchParam(searchParams, "order")
   const [orderData, setOrderData] = useState<OrderData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
