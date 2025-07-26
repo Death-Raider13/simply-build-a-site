@@ -1,4 +1,5 @@
 
+
 import { Header } from "../../components/layout/header"
 import { Footer } from "../../components/layout/footer"
 import { HeroSection } from "../../components/home/hero-section"
@@ -22,3 +23,4 @@ const Index = () => {
 };
 
 export default Index;
+
