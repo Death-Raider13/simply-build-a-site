@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -12,15 +13,18 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
+    // For demo purposes, we'll use a hardcoded user ID
+    const userId = "demo-user"
+    
     // Initialize notifications
     const updateNotifications = () => {
-      const allNotifications = notificationSystem.getNotifications()
-      setNotifications(allNotifications)
-      setUnreadCount(allNotifications.filter((n: any) => !n.read).length)
+      const result = notificationSystem.getNotifications(userId)
+      setNotifications(result.notifications)
+      setUnreadCount(result.unread)
     }
 
     // Listen for new notifications
-    const unsubscribe = notificationSystem.subscribe((notification: any) => {
+    const unsubscribe = notificationSystem.subscribe(userId, (notification: any) => {
       updateNotifications()
     })
 
