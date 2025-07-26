@@ -1,35 +1,13 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
-import { CheckCircle, Upload, FileText, Building, CreditCard, Mail, Store } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { emailService } from "@/lib/email-service"
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "@radix-ui/react-icons"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { useSearchParams } from "next/navigation"
-import { DateRange } from "react-day-picker"
-import * as React from "react"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { AlertCircle, CheckCircle, RefreshCw, Mail, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react"
 
 interface EmailLog {
   id: number
@@ -52,121 +30,268 @@ interface EmailResult {
 export function EmailSystemMonitor() {
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [stats, setStats] = useState({
+    totalSent: 0,
+    totalFailed: 0,
+    successRate: 0,
+    avgAttempts: 0,
+  })
 
   useEffect(() => {
-    const fetchEmailLogs = async () => {
-      setIsLoading(true)
-      try {
-        // Simulate fetching email logs from a database or API
-        // Replace this with your actual data fetching logic
-        const logs: EmailLog[] = [
-          {
-            id: 1,
-            to: "user1@example.com",
-            subject: "Welcome to KNITTED_GOURMET Nigeria",
-            provider: "SendGrid",
-            attempts: 1,
-            status: "sent",
-            timestamp: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-          },
-          {
-            id: 2,
-            to: "user2@example.com",
-            subject: "Order Confirmation",
-            provider: "Mailgun",
-            attempts: 2,
-            status: "failed",
-            error: "Invalid API key",
-            timestamp: new Date(Date.now() - 43200000).toISOString(), // 12 hours ago
-          },
-          {
-            id: 3,
-            to: "user3@example.com",
-            subject: "Password Reset",
-            provider: "SendGrid",
-            attempts: 1,
-            status: "sent",
-            timestamp: new Date().toISOString(), // Now
-          },
-        ]
-        setEmailLogs(logs)
-      } catch (error) {
-        console.error("Failed to fetch email logs:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchEmailLogs()
+    loadEmailLogs()
   }, [])
 
-  const sendTestEmail = async () => {
+  const loadEmailLogs = () => {
+    // Mock data for demonstration
+    const mockLogs: EmailLog[] = [
+      {
+        id: 1,
+        to: "user@example.com",
+        subject: "Welcome to KNITTED_GOURMET",
+        provider: "Resend",
+        attempts: 1,
+        status: "sent",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        to: "vendor@example.com",
+        subject: "Order Confirmation",
+        provider: "Nodemailer",
+        attempts: 2,
+        status: "failed",
+        error: "SMTP timeout",
+        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      },
+    ]
+    
+    setEmailLogs(mockLogs)
+    
+    // Calculate stats
+    const totalSent = mockLogs.filter(log => log.status === "sent").length
+    const totalFailed = mockLogs.filter(log => log.status === "failed").length
+    const successRate = mockLogs.length > 0 ? (totalSent / mockLogs.length) * 100 : 0
+    const avgAttempts = mockLogs.reduce((sum, log) => sum + log.attempts, 0) / mockLogs.length || 0
+
+    setStats({
+      totalSent,
+      totalFailed,
+      successRate: Math.round(successRate),
+      avgAttempts: Math.round(avgAttempts * 10) / 10,
+    })
+  }
+
+  const testEmailSystem = async () => {
     setIsLoading(true)
     try {
-      const result: EmailResult = await emailService.sendEmail(
-        "test@example.com",
-        "Test Email",
-        "This is a test email from KNITTED_GOURMET Nigeria",
-        "<p>This is a test email from <strong>KNITTED_GOURMET Nigeria</strong></p>"
-      )
-
-      const newLog: EmailLog = {
-        id: Date.now(),
-        to: "test@example.com",
-        subject: "Test Email",
-        provider: result.provider || "unknown",
-        attempts: result.attempts || 1,
-        status: result.success ? "sent" : "failed",
-        error: result.error?.message || undefined,
-        timestamp: new Date().toISOString(),
+      // Mock email test
+      const result: EmailResult = {
+        success: true,
+        attempts: 1,
+        provider: "Resend"
       }
 
-      setEmailLogs(prev => [newLog, ...prev])
+      if (result.success) {
+        const newLog: EmailLog = {
+          id: emailLogs.length + 1,
+          to: "test@example.com",
+          subject: "System Test Email",
+          provider: result.provider || "Unknown",
+          attempts: result.attempts,
+          status: "sent",
+          timestamp: new Date().toISOString(),
+        }
+
+        setEmailLogs(prev => [newLog, ...prev])
+        loadEmailLogs()
+      }
     } catch (error) {
-      console.error("Failed to send test email:", error)
+      console.error("Email test failed:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Email System Monitor</CardTitle>
-        <CardDescription>Monitor the status of emails sent from your application.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4">
-          <Button onClick={sendTestEmail} disabled={isLoading}>
-            {isLoading ? "Sending..." : "Send Test Email"}
-          </Button>
-        </div>
+  const getStatusBadge = (status: EmailLog["status"]) => {
+    if (status === "sent") {
+      return <Badge className="bg-green-100 text-green-800 border-green-200">Sent</Badge>
+    }
+    return <Badge variant="destructive">Failed</Badge>
+  }
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>To</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Attempts</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Timestamp</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {emailLogs.map(log => (
-              <TableRow key={log.id}>
-                <TableCell>{log.to}</TableCell>
-                <TableCell>{log.subject}</TableCell>
-                <TableCell>{log.provider}</TableCell>
-                <TableCell>{log.attempts}</TableCell>
-                <TableCell>{log.status}</TableCell>
-                <TableCell>{log.timestamp}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+  return (
+    <div className="space-y-6">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-green-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.totalSent}</div>
+            <div className="flex items-center space-x-1 mt-1">
+              <TrendingUp className="h-3 w-3 text-green-600" />
+              <p className="text-xs text-muted-foreground">Success rate: {stats.successRate}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Failed Emails</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.totalFailed}</div>
+            <div className="flex items-center space-x-1 mt-1">
+              <TrendingDown className="h-3 w-3 text-red-600" />
+              <p className="text-xs text-muted-foreground">Failure rate: {100 - stats.successRate}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg. Attempts</CardTitle>
+            <RefreshCw className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{stats.avgAttempts}</div>
+            <p className="text-xs text-muted-foreground">Per email delivery</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-yellow-100">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">System Health</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.successRate >= 95 ? "Excellent" : stats.successRate >= 85 ? "Good" : "Needs Attention"}
+            </div>
+            <p className="text-xs text-muted-foreground">Overall status</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Email System Controls */}
+      <Card className="border-green-100">
+        <CardHeader>
+          <CardTitle className="text-green-600 flex items-center space-x-2">
+            <Mail className="h-5 w-5" />
+            <span>Email System Controls</span>
+          </CardTitle>
+          <CardDescription>Test and monitor email delivery system</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <Button onClick={testEmailSystem} disabled={isLoading} className="bg-green-600 hover:bg-green-700">
+              {isLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4 mr-2" />
+              )}
+              Test Email System
+            </Button>
+            <Button variant="outline" onClick={loadEmailLogs} className="border-green-600 text-green-600 bg-transparent">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Logs
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Email Logs */}
+      <Tabs defaultValue="recent" className="space-y-4">
+        <TabsList className="bg-green-50">
+          <TabsTrigger value="recent" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+            Recent Emails
+          </TabsTrigger>
+          <TabsTrigger value="failed" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
+            Failed Emails
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="recent">
+          <Card className="border-green-100">
+            <CardHeader>
+              <CardTitle className="text-green-600">Recent Email Activity</CardTitle>
+              <CardDescription>Latest email delivery attempts and status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-4">
+                  {emailLogs.map((log) => (
+                    <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{log.subject}</h3>
+                            <p className="text-sm text-muted-foreground">To: {log.to}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Provider: {log.provider} | Attempts: {log.attempts}
+                            </p>
+                            {log.error && <p className="text-sm text-red-600">Error: {log.error}</p>}
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Status</p>
+                            {getStatusBadge(log.status)}
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Time</p>
+                            <p className="text-sm">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="failed">
+          <Card className="border-green-100">
+            <CardHeader>
+              <CardTitle className="text-green-600">Failed Email Deliveries</CardTitle>
+              <CardDescription>Emails that failed to send and require attention</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-4">
+                  {emailLogs
+                    .filter(log => log.status === "failed")
+                    .map((log) => (
+                      <div key={log.id} className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-red-900">{log.subject}</h3>
+                              <p className="text-sm text-red-700">To: {log.to}</p>
+                              <p className="text-sm text-red-700">
+                                Provider: {log.provider} | Attempts: {log.attempts}
+                              </p>
+                              {log.error && <p className="text-sm text-red-800 font-medium">Error: {log.error}</p>}
+                            </div>
+                            <Button size="sm" variant="outline" className="border-red-600 text-red-600">
+                              Retry
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }

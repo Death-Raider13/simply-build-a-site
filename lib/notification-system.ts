@@ -1,82 +1,93 @@
 
+export type NotificationType = "ORDER" | "INVENTORY" | "MESSAGE" | "SYSTEM" | "PAYMENT" | "SHIPPING"
+export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+
 export interface Notification {
   id: string
-  type: "ORDER" | "INVENTORY" | "MESSAGE" | "SYSTEM" | "PAYMENT" | "SHIPPING"
+  userId: string
+  type: NotificationType
   title: string
   message: string
-  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  priority: NotificationPriority
   read: boolean
-  timestamp: string
+  createdAt: Date
   actionUrl?: string
-  actionText?: string
+  actionLabel?: string
 }
 
 class NotificationSystem {
   private notifications: Notification[] = []
-  private subscribers: Array<(notification: Notification) => void> = []
+  private subscribers: Map<string, (notification: Notification) => void> = new Map()
 
-  addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) {
+  subscribe(userId: string, callback: (notification: Notification) => void) {
+    const key = `${userId}_${Date.now()}`
+    this.subscribers.set(key, callback)
+    
+    return () => {
+      this.subscribers.delete(key)
+    }
+  }
+
+  sendNotification(notification: Omit<Notification, 'id' | 'createdAt'>) {
     const newNotification: Notification = {
       ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
-      read: false
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date()
     }
-
-    this.notifications.unshift(newNotification)
-    this.notifySubscribers(newNotification)
     
-    return newNotification.id
+    this.notifications.push(newNotification)
+    
+    // Notify subscribers
+    this.subscribers.forEach(callback => {
+      if (callback) {
+        callback(newNotification)
+      }
+    })
   }
 
-  getNotifications(): Notification[] {
-    return this.notifications
+  sendInventoryAlert(vendorId: string, productName: string, currentStock: number, reorderPoint: number) {
+    this.sendNotification({
+      userId: vendorId,
+      type: "INVENTORY",
+      title: "Low Stock Alert",
+      message: `${productName} is running low. Current stock: ${currentStock}, Reorder point: ${reorderPoint}`,
+      priority: currentStock === 0 ? "URGENT" : "HIGH",
+      read: false,
+      actionUrl: "/inventory",
+      actionLabel: "View Inventory"
+    })
   }
 
-  markAsRead(id: string) {
-    const notification = this.notifications.find(n => n.id === id)
+  getNotifications(userId: string) {
+    const userNotifications = this.notifications.filter(n => n.userId === userId)
+    const unread = userNotifications.filter(n => !n.read).length
+    
+    return {
+      notifications: userNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+      unread
+    }
+  }
+
+  markAsRead(notificationId: string) {
+    const notification = this.notifications.find(n => n.id === notificationId)
     if (notification) {
       notification.read = true
     }
   }
 
-  markAllAsRead() {
-    this.notifications.forEach(n => n.read = true)
+  markAllAsRead(userId: string) {
+    const userNotifications = this.notifications.filter(n => n.userId === userId && !n.read)
+    userNotifications.forEach(n => n.read = true)
+    return userNotifications.length
   }
 
-  subscribe(callback: (notification: Notification) => void) {
-    this.subscribers.push(callback)
-    return () => {
-      this.subscribers = this.subscribers.filter(sub => sub !== callback)
+  deleteNotification(notificationId: string) {
+    const index = this.notifications.findIndex(n => n.id === notificationId)
+    if (index > -1) {
+      this.notifications.splice(index, 1)
     }
-  }
-
-  private notifySubscribers(notification: Notification) {
-    this.subscribers.forEach(callback => callback(notification))
-  }
-
-  // Inventory-specific notifications
-  createLowStockAlert(productName: string, currentStock: number, minStock: number) {
-    return this.addNotification({
-      type: "INVENTORY",
-      title: "Low Stock Alert",
-      message: `${productName} is running low (${currentStock} remaining, minimum: ${minStock})`,
-      priority: currentStock === 0 ? "URGENT" : "HIGH",
-      actionUrl: "/vendor/inventory",
-      actionText: "Restock Now"
-    })
-  }
-
-  createOrderNotification(orderId: string, customerName: string, amount: number) {
-    return this.addNotification({
-      type: "ORDER",
-      title: "New Order Received",
-      message: `New order #${orderId} from ${customerName} for ₦${amount.toLocaleString()}`,
-      priority: "HIGH",
-      actionUrl: `/orders/${orderId}`,
-      actionText: "View Order"
-    })
   }
 }
 
-export const notificationSystem = new NotificationSystem()
+export const notificationManager = new NotificationSystem()
+export { notificationManager as notificationSystem }
